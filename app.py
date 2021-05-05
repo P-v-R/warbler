@@ -6,8 +6,8 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
-from models import db, connect_db, User, Message
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteForm
+from models import db, connect_db, User, Message, Like
 
 CURR_USER_KEY = "curr_user"
 
@@ -110,16 +110,14 @@ def login():
 
     return render_template('users/login.html', form=form)
 
-
-@app.route('/logout')
+# make POST (form instead of link)
+@app.route('/logout', methods = ["POST"])
 def logout():
     """Handle logout of user."""
 
-    # IMPLEMENT THIS look @ line 49
-
     do_logout()
-    flash("Successfully logged out!", 'success')
 
+    flash("Successfully logged out!", 'success')
     return redirect('/login')
 
 
@@ -146,10 +144,11 @@ def list_users():
 @app.route('/users/<int:user_id>')
 def users_show(user_id):
     """Show user profile."""
+    form = DeleteForm() 
 
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user)
+    return render_template('users/show.html', user=user, form=form)
 
 
 @app.route('/users/<int:user_id>/following')
@@ -210,11 +209,12 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    # IMPLEMENT THIS
+    # if user not logged in redirect to login/register page
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    
+
+    #fill form with users current info
     form = UserEditForm(obj=g.user)
 
     if form.validate_on_submit():
@@ -232,14 +232,13 @@ def profile():
 
             flash("Successfully editted profile!", "success")
             return redirect(f'/users/{user.id}')
-
+        # if forms confirmation password doesnt match, alert user and try again
         else:
             flash("Incorrect Password!", "danger")
-            return render_template('/users/edit.html', form=form)
+            return render_template('/users/edit.html', form=form, user_id=user.id)
 
     else:
-        return render_template('/users/edit.html', form=form) 
-
+        return render_template('/users/edit.html', form=form, user_id=g.user.id)
 
 
 @app.route('/users/delete', methods=["POST"])
@@ -250,10 +249,15 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    # CSRF !!!!!!!!
+    form = DeleteForm()
+    if form.validate_on_submit():
+        do_logout()
 
-    db.session.delete(g.user)
-    db.session.commit()
+        db.session.delete(g.user)
+        db.session.commit()
+
+        
 
     return redirect("/signup")
 
@@ -320,8 +324,8 @@ def homepage():
     """
 
     if g.user:
-        following_ids = [f.id for f in g.user.following]
-        
+        following_ids = [f.id for f in g.user.following] + [g.user.id]
+
         messages = (Message
                     .query
                     .filter(Message.user_id.in_(following_ids))

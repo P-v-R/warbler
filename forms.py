@@ -35,3 +35,7 @@ class UserEditForm(FlaskForm):
 
     password = PasswordField('Password', validators=[Length(min=6)])
 
+class DeleteForm(FlaskForm):
+    """ Generic Delete Form """
+
+

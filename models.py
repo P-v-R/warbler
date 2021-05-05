@@ -27,6 +27,25 @@ class Follows(db.Model):
     )
 
 
+class Like(db.Model):
+
+    """ Connection of a user and message """
+
+    __tablename__ = 'likes'
+
+    liking_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete="cascade"),
+        primary_key=True,
+    )
+
+    message_liked_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete="cascade"),
+        primary_key=True,
+    )
+
+
 class User(db.Model):
     """User in the system."""
 
@@ -77,7 +96,9 @@ class User(db.Model):
     followers = db.relationship(
         "User",
         secondary="follows",
+        # give me list of users.id that are being followed by me
         primaryjoin=(Follows.user_being_followed_id == id),
+        # get all users.id from ^^^ and retrieve the instance for each user
         secondaryjoin=(Follows.user_following_id == id)
     )
 
@@ -88,19 +109,27 @@ class User(db.Model):
         secondaryjoin=(Follows.user_being_followed_id == id)
     )
 
+    likes = db.relationship(
+        'Message',
+        secondary="likes",
+        primaryjoin=(Like.liking_user_id == id),
+        secondaryjoin=(Like.message_liked_id == id))
+
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
 
     def is_followed_by(self, other_user):
         """Is this user followed by `other_user`?"""
 
-        found_user_list = [user for user in self.followers if user == other_user]
+        found_user_list = [
+            user for user in self.followers if user == other_user]
         return len(found_user_list) == 1
 
     def is_following(self, other_user):
         """Is this user following `other_use`?"""
 
-        found_user_list = [user for user in self.following if user == other_user]
+        found_user_list = [
+            user for user in self.following if user == other_user]
         return len(found_user_list) == 1
 
     @classmethod
