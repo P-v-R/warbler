@@ -188,8 +188,6 @@ def add_follow(follow_id):
     g.user.following.append(followed_user)
     db.session.commit()
 
-    breakpoint()
-
     return redirect(f"/users/{g.user.id}/following")
 
 
@@ -322,8 +320,11 @@ def homepage():
     """
 
     if g.user:
+        following_ids = [f.id for f in g.user.following]
+        
         messages = (Message
                     .query
+                    .filter(Message.user_id.in_(following_ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
