@@ -159,8 +159,10 @@ def show_following(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    form = DeleteForm() 
+
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user)
+    return render_template('users/following.html', user=user, form=form)
 
 
 @app.route('/users/<int:user_id>/followers')
@@ -171,8 +173,9 @@ def users_followers(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    form = DeleteForm() 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+    return render_template('users/followers.html', user=user, form=form)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
@@ -332,11 +335,23 @@ def homepage():
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
+        
 
-        return render_template('home.html', messages=messages)
+        liked_ids = [msg.id for msg in g.user.likes]
+        return render_template('home.html', messages=messages, liked_ids=liked_ids)
 
     else:
         return render_template('home-anon.html')
+
+##############################################################################
+# Like routes:
+
+
+@app.route('/like', methods=["POST"])
+def like_msg():
+
+    return redirect('/messages/new')
+
 
 
 ##############################################################################

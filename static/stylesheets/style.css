@@ -275,6 +275,14 @@ nav + .container {
   right: 0;
   z-index: 1;
 }
+.like {
+  position: bottom;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
 
 #messages .list-group-item a:not(.message-link) {
   position: relative;
