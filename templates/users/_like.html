@@ -1,0 +1,12 @@
+<form>
+  {{ form.hidden_tag() }}
+  {% if message in g.user.likes and message.user_id != g.user.id %}
+  <button type="submit" class="btn like" formaction="/unlike/{{message.id}}" formmethod="POST">
+    <i class="fas fa-heart fa-lg"></i></button>
+
+  {% elif message.user_id != g.user.id and g.user.id %}
+
+  <button type="submit" class="btn like" formaction="/like/{{message.id}}" formmethod="POST">
+    <i class="far fa-heart fa-lg"></i></button>
+  {% endif %}
+</form>

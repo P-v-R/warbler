@@ -29,7 +29,7 @@ class Follows(db.Model):
 
 class Like(db.Model):
 
-    """ Connection of a user and message """
+    """ Connection of a user and a liked message """
 
     __tablename__ = 'likes'
 
@@ -45,7 +45,7 @@ class Like(db.Model):
         primary_key=True,
     )
 
-
+# TODO return set of liked messages 
 class User(db.Model):
     """User in the system."""
 
@@ -109,6 +109,7 @@ class User(db.Model):
         secondaryjoin=(Follows.user_being_followed_id == id)
     )
 
+    #TODO fix naming
     likes = db.relationship(
         'Message',
         secondary="likes",

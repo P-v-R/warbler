@@ -32,6 +32,7 @@
               {% endif %}
             </div>
             <p class="single-message">{{ message.text }}</p>
+            {% include 'users/_like.html' %}
             <span class="text-muted">{{ message.timestamp.strftime('%d %B %Y') }}</span>
           </div>
         </li>

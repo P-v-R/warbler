@@ -117,6 +117,7 @@ def login():
 def logout():
     """Handle logout of user."""
 
+#TODO add CSRF protection here
     do_logout()
 
     flash("Successfully logged out!", 'success')
@@ -146,19 +147,16 @@ def list_users():
 @app.route('/users/<int:user_id>')
 def users_show(user_id):
     """Show user profile."""
+
     form = DeleteForm()
     likeform = LikeUnlikeForm()
-
-    liked_ids = [msg.id for msg in g.user.likes]
 
     user = User.query.get_or_404(user_id)
 
     return render_template('users/show.html',
                            user=user,
                            form=form,
-                           likeform=likeform,
-                           liked_ids=liked_ids)
-
+                           likeform=likeform)
 
 @app.route('/users/<int:user_id>/following')
 def show_following(user_id):
@@ -206,6 +204,8 @@ def add_follow(follow_id):
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
 
+    # TODO had csrf token for follow/unfollow???
+
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
@@ -215,6 +215,21 @@ def stop_following(follow_id):
     db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
+
+
+@app.route('/users/<int:user_id>/likes')
+def show_user_likes(user_id):
+    """ Show all messages user has liked on their profile """
+
+    user = User.query.get_or_404(user_id)
+
+    form = LikeUnlikeForm()
+
+    # collect list of ids of messages liked by logged-in user
+
+    return render_template('/users/likes.html',
+                           user=user,
+                           form=form)
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -239,6 +254,7 @@ def profile():
             user.image_url = form.image_url.data
             user.header_image_url = form.header_image_url.data
             user.bio = form.bio.data
+            user.location = form.location.data
 
             db.session.commit()
 
@@ -302,8 +318,9 @@ def messages_add():
 def messages_show(message_id):
     """Show a message."""
 
+    form = LikeUnlikeForm()
     msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg)
+    return render_template('messages/show.html', message=msg, form=form)
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
@@ -334,7 +351,8 @@ def homepage():
     """
 
     if g.user:
-        following_ids = [f.id for f in g.user.following] + [g.user.id]
+        following_ids = [f.id for f in g.user.following]
+        following_ids.append(g.user.id)
 
         messages = (Message
                     .query
@@ -344,8 +362,10 @@ def homepage():
                     .all())
 
         form = LikeUnlikeForm()
-        liked_ids = [msg.id for msg in g.user.likes]
-        return render_template('home.html', messages=messages, liked_ids=liked_ids, form=form)
+
+        return render_template('home.html',
+                               messages=messages,
+                               form=form)
 
     else:
         return render_template('home-anon.html')
@@ -353,24 +373,34 @@ def homepage():
 ##############################################################################
 # Like routes:
 
-# TODO need to add like/unlike logic
+# Can we put like / unlike in same route?
 
 
 @app.route('/like/<int:msg_id>', methods=["POST"])
 def like_msg(msg_id):
-    """ handle user liking a message """
+    """ handle user liking a message """ # add where it redirects
     # authentication
     if not g.user:
-        flash("login to like message", "warning")
+        flash("login to like warble", "warning")
+        return redirect("/")
+
+    if msg_id == g.user.id:
+        flash("You cannot like your own warble", "warning")
         return redirect("/")
 
     # CSRF protection
     form = LikeUnlikeForm()
+
     if form.validate_on_submit():
         message_liked = Message.query.get_or_404(msg_id)
         g.user.likes.append(message_liked)
+
         db.session.commit()
-        return redirect(request.referrer)
+
+        if request.referrer:
+            return redirect(request.referrer)
+        
+        return redirect('/')
 
 
 @app.route('/unlike/<int:msg_id>', methods=["POST"])
@@ -378,16 +408,26 @@ def unlike_msg(msg_id):
     """ handle user unliking a message """
     # authentication
     if not g.user:
-        flash("login to unlike message.", "warning")
+        flash("login to unlike warble.", "warning")
         return redirect("/")
 
+    if msg_id == g.user.id:
+        flash("You cannot like your own warble", "warning")
+        return redirect("/")
+    
     # CSRF protection
     form = LikeUnlikeForm()
+
     if form.validate_on_submit():
         message_unliked = Message.query.get_or_404(msg_id)
         g.user.likes.remove(message_unliked)
+
         db.session.commit()
-        return redirect(request.referrer)
+
+        if request.referrer:
+            return redirect(request.referrer)
+
+        return redirect('/')
 
 ##############################################################################
 # Turn off all caching in Flask
@@ -404,3 +444,10 @@ def add_header(response):
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
     response.cache_control.no_store = True
     return response
+
+##TODO
+    # LikeUnlikeForm in prerequest
+    # change name of likes relationship
+    # O(n^2) loop in liked message loop
+        #make model relationship that returns set of liked message user ids
+    # add CSRF protection for logout
