@@ -1,6 +1,6 @@
 <form>
   {{ g.CSRFForm.hidden_tag() }}
-  {% if message in g.user.liked_messages and message.user_id != g.user.id %}
+  {% if message.id in g.user.liked_message_ids and message.user_id != g.user.id %}
   <button type="submit" class="btn like" formaction="/unlike/{{message.id}}" formmethod="POST">
     <i class="fas fa-heart fa-lg"></i></button>
 
