@@ -37,7 +37,7 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-        g.user.liked_message_ids = set([lm.id for lm in g.user.liked_messages])
+        g.user.liked_message_ids = {lm.id for lm in g.user.liked_messages}
 
     else:
         g.user = None
@@ -45,7 +45,7 @@ def add_user_to_g():
 @app.before_request
 def generate_csrf_token():
     """ Add csrf tokens before every POST request to prevent CSRF """
-    g.CSRFForm = CSRFForm()
+    g.csrfForm = CSRFForm()
 
     # g in jinja -- one generic form
 
@@ -194,7 +194,7 @@ def add_follow(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         followed_user = User.query.get_or_404(follow_id)
         g.user.following.append(followed_user)
         db.session.commit()
@@ -212,7 +212,7 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         followed_user = User.query.get(follow_id)
         g.user.following.remove(followed_user)
         db.session.commit()
@@ -277,7 +277,7 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         do_logout()
 
         db.session.delete(g.user)
@@ -328,7 +328,7 @@ def messages_destroy(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         msg = Message.query.get(message_id)
         db.session.delete(msg)
         db.session.commit()
@@ -383,7 +383,7 @@ def like_msg(msg_id):
         flash("You cannot like your own warble", "warning")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         message_liked = Message.query.get_or_404(msg_id)
         g.user.liked_messages.append(message_liked)
 
@@ -408,7 +408,7 @@ def unlike_msg(msg_id):
         flash("You cannot like your own warble", "warning")
         return redirect("/")
 
-    if g.CSRFForm.validate_on_submit():
+    if g.csrfForm.validate_on_submit():
         message_unliked = Message.query.get_or_404(msg_id)
         g.user.liked_messages.remove(message_unliked)
 
@@ -434,10 +434,3 @@ def add_header(response):
     response.cache_control.no_store = True
     return response
 
-# TODO
-    # O(n^2) loop in liked message loop
-        # make model relationship that returns set of liked message user ids
-
-    # change name of likes relationship x
-    # LikeUnlikeForm in prerequest x
-    # add CSRF protection for logout x
