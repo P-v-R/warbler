@@ -38,4 +38,7 @@ class UserEditForm(FlaskForm):
 class DeleteForm(FlaskForm):
     """ Generic Delete Form """
 
+class LikeUnlikeForm(FlaskForm):
+    """ Generic like unlike protection form """
+
 

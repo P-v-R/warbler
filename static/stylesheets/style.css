@@ -37,6 +37,12 @@ body.error-404 {
   font-weight: bold;
 }
 
+.navbar .logout {
+  color: #b96969;
+  font-size: 13px;
+  font-weight: bold;
+}
+
 .navbar a:hover {
   color: #1c94e0;
 }
@@ -276,12 +282,12 @@ nav + .container {
   z-index: 1;
 }
 .like {
-  position: bottom;
+  position: relative;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 3;
 }
 
 #messages .list-group-item a:not(.message-link) {
