@@ -36,10 +36,5 @@ class UserEditForm(FlaskForm):
 
     password = PasswordField('Password', validators=[Length(min=6)])
 
-class DeleteForm(FlaskForm):
-    """ Generic Delete Form """
-
-class LikeUnlikeForm(FlaskForm):
-    """ Generic like unlike protection form """
-
-
+class CSRFForm(FlaskForm):
+    """ generic post request CSRF token form """

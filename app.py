@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteForm, LikeUnlikeForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, CSRFForm
 from models import db, connect_db, User, Message, Like
 
 CURR_USER_KEY = "curr_user"
@@ -42,6 +42,12 @@ def add_user_to_g():
         g.user = None
 
 
+@app.before_request
+def generate_csrf_token():
+    """ Add csrf tokens before every POST request to prevent CSRF """
+    g.CSRFForm = CSRFForm()
+
+    # g in jinja -- one generic form 
 def do_login(user):
     """Log in user."""
 
@@ -117,7 +123,7 @@ def login():
 def logout():
     """Handle logout of user."""
 
-#TODO add CSRF protection here
+# TODO add CSRF protection here
     do_logout()
 
     flash("Successfully logged out!", 'success')
@@ -148,15 +154,11 @@ def list_users():
 def users_show(user_id):
     """Show user profile."""
 
-    form = DeleteForm()
-    likeform = LikeUnlikeForm()
-
     user = User.query.get_or_404(user_id)
 
     return render_template('users/show.html',
-                           user=user,
-                           form=form,
-                           likeform=likeform)
+                           user=user)
+
 
 @app.route('/users/<int:user_id>/following')
 def show_following(user_id):
@@ -166,10 +168,8 @@ def show_following(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = DeleteForm()
-
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user, form=form)
+    return render_template('users/following.html', user=user)
 
 
 @app.route('/users/<int:user_id>/followers')
@@ -180,9 +180,8 @@ def users_followers(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = DeleteForm()
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user, form=form)
+    return render_template('users/followers.html', user=user)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
@@ -192,10 +191,10 @@ def add_follow(follow_id):
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    g.CSRFForm.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.append(followed_user)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
@@ -210,9 +209,10 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get(follow_id)
-    g.user.following.remove(followed_user)
-    db.session.commit()
+    g.CSRFForm.validate_on_submit():
+        followed_user = User.query.get(follow_id)
+        g.user.following.remove(followed_user)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
@@ -223,13 +223,10 @@ def show_user_likes(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    form = LikeUnlikeForm()
-
     # collect list of ids of messages liked by logged-in user
 
     return render_template('/users/likes.html',
-                           user=user,
-                           form=form)
+                           user=user)
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -277,9 +274,7 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    # CSRF protection
-    form = DeleteForm()
-    if form.validate_on_submit():
+    if g.CSRFForm.validate_on_submit():
         do_logout()
 
         db.session.delete(g.user)
@@ -318,9 +313,8 @@ def messages_add():
 def messages_show(message_id):
     """Show a message."""
 
-    form = LikeUnlikeForm()
     msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg, form=form)
+    return render_template('messages/show.html', message=msg)
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
@@ -331,9 +325,10 @@ def messages_destroy(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    if g.CSRFForm.validate_on_submit():
+        msg = Message.query.get(message_id)
+        db.session.delete(msg)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}")
 
@@ -361,11 +356,8 @@ def homepage():
                     .limit(100)
                     .all())
 
-        form = LikeUnlikeForm()
-
         return render_template('home.html',
-                               messages=messages,
-                               form=form)
+                               messages=messages)
 
     else:
         return render_template('home-anon.html')
@@ -378,7 +370,7 @@ def homepage():
 
 @app.route('/like/<int:msg_id>', methods=["POST"])
 def like_msg(msg_id):
-    """ handle user liking a message """ # add where it redirects
+    """ handle user liking a message """  # add where it redirects
     # authentication
     if not g.user:
         flash("login to like warble", "warning")
@@ -388,10 +380,7 @@ def like_msg(msg_id):
         flash("You cannot like your own warble", "warning")
         return redirect("/")
 
-    # CSRF protection
-    form = LikeUnlikeForm()
-
-    if form.validate_on_submit():
+    if g.CSRFForm.validate_on_submit():
         message_liked = Message.query.get_or_404(msg_id)
         g.user.likes.append(message_liked)
 
@@ -399,7 +388,7 @@ def like_msg(msg_id):
 
         if request.referrer:
             return redirect(request.referrer)
-        
+
         return redirect('/')
 
 
@@ -414,11 +403,8 @@ def unlike_msg(msg_id):
     if msg_id == g.user.id:
         flash("You cannot like your own warble", "warning")
         return redirect("/")
-    
-    # CSRF protection
-    form = LikeUnlikeForm()
 
-    if form.validate_on_submit():
+    if g.CSRFForm.validate_on_submit():
         message_unliked = Message.query.get_or_404(msg_id)
         g.user.likes.remove(message_unliked)
 
@@ -445,9 +431,9 @@ def add_header(response):
     response.cache_control.no_store = True
     return response
 
-##TODO
+# TODO
     # LikeUnlikeForm in prerequest
     # change name of likes relationship
     # O(n^2) loop in liked message loop
-        #make model relationship that returns set of liked message user ids
+    # make model relationship that returns set of liked message user ids
     # add CSRF protection for logout
