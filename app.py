@@ -41,13 +41,14 @@ def add_user_to_g():
     else:
         g.user = None
 
-
 @app.before_request
 def generate_csrf_token():
     """ Add csrf tokens before every POST request to prevent CSRF """
     g.CSRFForm = CSRFForm()
 
-    # g in jinja -- one generic form 
+    # g in jinja -- one generic form
+
+
 def do_login(user):
     """Log in user."""
 
@@ -191,7 +192,8 @@ def add_follow(follow_id):
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    g.CSRFForm.validate_on_submit():
+
+    if g.CSRFForm.validate_on_submit():
         followed_user = User.query.get_or_404(follow_id)
         g.user.following.append(followed_user)
         db.session.commit()
@@ -209,7 +211,7 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    g.CSRFForm.validate_on_submit():
+    if g.CSRFForm.validate_on_submit():
         followed_user = User.query.get(follow_id)
         g.user.following.remove(followed_user)
         db.session.commit()
@@ -382,7 +384,7 @@ def like_msg(msg_id):
 
     if g.CSRFForm.validate_on_submit():
         message_liked = Message.query.get_or_404(msg_id)
-        g.user.likes.append(message_liked)
+        g.user.liked_messages.append(message_liked)
 
         db.session.commit()
 
@@ -406,10 +408,9 @@ def unlike_msg(msg_id):
 
     if g.CSRFForm.validate_on_submit():
         message_unliked = Message.query.get_or_404(msg_id)
-        g.user.likes.remove(message_unliked)
+        g.user.liked_messages.remove(message_unliked)
 
         db.session.commit()
-
         if request.referrer:
             return redirect(request.referrer)
 
@@ -432,8 +433,9 @@ def add_header(response):
     return response
 
 # TODO
-    # LikeUnlikeForm in prerequest
-    # change name of likes relationship
     # O(n^2) loop in liked message loop
-    # make model relationship that returns set of liked message user ids
-    # add CSRF protection for logout
+        # make model relationship that returns set of liked message user ids
+
+    # change name of likes relationship x
+    # LikeUnlikeForm in prerequest x
+    # add CSRF protection for logout x

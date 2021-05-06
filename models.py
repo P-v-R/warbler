@@ -109,11 +109,15 @@ class User(db.Model):
         secondaryjoin=(Follows.user_being_followed_id == id)
     )
 
-    #TODO fix naming
-    likes = db.relationship(
+
+    liked_messages = db.relationship(
         'Message',
         secondary="likes",
         backref="users")
+    # O(n^2) loop in liked message loop
+    # make model relationship that returns set of liked message user ids
+    
+
 
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"

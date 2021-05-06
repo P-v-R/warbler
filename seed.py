@@ -23,9 +23,9 @@ admin1 = User.signup(username = "admin1", email="g@g.com", password="admin1", im
 db.session.add(admin1)
 db.session.commit()
 
-breakpoint()
-like1 = Like(liking_user_id=301, message_liked_id=222)
+# breakpoint()
+# like1 = Like(liking_user_id=301, message_liked_id=222)
 
-db.session.add(like1)
-db.session.commit()
+# db.session.add(like1)
+# db.session.commit()
 
