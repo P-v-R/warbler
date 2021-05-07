@@ -114,9 +114,10 @@ class User(db.Model):
         'Message',
         secondary="likes",
         backref="users")
+    
     # O(n^2) loop in liked message loop
     # make model relationship that returns set of liked message user ids
-    
+    # liked_message_ids = set([lm.id for lm in liked_messages])
 
 
     def __repr__(self):

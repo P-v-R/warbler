@@ -5,8 +5,10 @@
 #    python -m unittest test_user_model.py
 
 
+from app import app
 import os
 from unittest import TestCase
+from sqlalchemy.exc import IntegrityError
 
 from models import db, User, Message, Follows
 
@@ -18,7 +20,6 @@ from models import db, User, Message, Follows
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 # Now we can import app
 
-from app import app
 
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
@@ -37,53 +38,105 @@ class UserModelTestCase(TestCase):
         Message.query.delete()
         Follows.query.delete()
 
+        signupUser = User.signup(username="test_user",
+                    email="test@test.com", 
+                    password="HASHED_PASSWORD",
+                    image_url="" )
+        
+
+        db.session.commit()
+        self.user_id = signupUser.id
+        
         self.client = app.test_client()
+
+    def tearDown(self):
+        """"""
+        db.session.rollback()
+
 
     def test_user_model(self):
         """Does basic model work?"""
 
-        u = User(
-            email="test@test.com",
-            username="testuser",
-            password="HASHED_PASSWORD"
-        )
 
-        db.session.add(u)
-        db.session.commit()
-
+        user = User.query.get(self.user_id)
         # User should have no messages & no followers
-        self.assertEqual(len(u.messages), 0)
-        self.assertEqual(len(u.followers), 0)
+        self.assertEqual(len(user.messages), 0)
+        self.assertEqual(len(user.followers), 0)
 
     def test_is_following(self):
         """Test is_following relationship working"""
 
-        u = User(
-            email="test@test.com",
-            username="testuser",
-            password="HASHED_PASSWORD"
-        )
 
-        follow_u = User(
+        userTwo = User(
             email="test1@test.com",
             username="followuser",
             password="HASHED_PASSWORD"
         )
 
-        db.session.add(u)
-        db.session.add(follow_u)
+        db.session.add(userTwo)
 
         db.session.commit()
 
-        follow = Follows(user_being_followed_id = follow_u.id, 
-            user_following_id=u.id)
+        user = User.query.get(self.user_id)
+
+        follow = Follows(user_being_followed_id=userTwo.id,
+                         user_following_id=user.id)
 
         db.session.add(follow)
         db.session.commit()
 
-        self.assertEqual(len(u.following), 1)
-        self.assertIn(follow_u, u.following)
+        self.assertEqual(len(user.following), 1)
+        self.assertIn(userTwo, user.following)
+
+        # test to make see if NOT following is also working, (userTwo shouldn't be following user )
+        self.assertNotIn(user, userTwo.following)
+
+        # see if the user.followers method is functioning as expected
+        self.assertEqual(len(userTwo.followers), 1)
+        self.assertIn(user, userTwo.followers)
+        
+        # Does User.followers successfully detect when user is not followed by userTwo
+        self.assertNotIn(userTwo, user.followers)
+
+    
+    def test_user_signup_success(self):
+        """ Does User.signup successfully create a new user given valid credentials? """
+       
         
 
+        user = User.query.get(self.user_id)
+        self.assertIsInstance(user, User)
+                    
+        
+    def test_user_signup_fail_same_username(self):
+        """ does user.signup fail to create new User when username is the same"""
+
+        # same name as signupUser 
+    
+        sameNameUser = User.signup(username="test_user",
+                    email="testTwo@testTwo.com", 
+                    password="HASHED_PASSWORD",
+                    image_url="" )
+        with self.assertRaises(IntegrityError):
+            db.session.commit()
 
 
+        db.session.rollback()
+        allUsers = User.query.all()
+
+        self.assertEqual(len(allUsers), 1)
+
+    def test_user_signup_fail_same_email(self):
+        """  """
+
+        # invalid email 
+        # invalidEmailUser = User.signup(username="invalidEmailUser",
+        #             email="testThree.com", 
+        #             password="HASHED_PASSWORD",
+        #             image_url="" )
+        # same email as signupUser
+        # signupUser = User.signup(username="same_email_user",
+        #             email="test@test.com", 
+        #             password="HASHED_PASSWORD",
+        #             image_url="" )
+        
