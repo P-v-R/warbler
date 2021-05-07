@@ -126,17 +126,42 @@ class UserModelTestCase(TestCase):
 
         self.assertEqual(len(allUsers), 1)
 
-    def test_user_signup_fail_same_email(self):
-        """  """
+    def test_user_signup_fail_no_email(self):
+        """ does user.signup fail to create new User when email is invalid """
 
-        # invalid email 
-        # invalidEmailUser = User.signup(username="invalidEmailUser",
-        #             email="testThree.com", 
-        #             password="HASHED_PASSWORD",
-        #             image_url="" )
-        # same email as signupUser
-        # signupUser = User.signup(username="same_email_user",
-        #             email="test@test.com", 
-        #             password="HASHED_PASSWORD",
-        #             image_url="" )
-        
+        with self.assertRaises(TypeError):
+            invalidEmailUser = User.signup(username="invalidEmailUser",
+                        password="HASHED_PASSWORD",
+                        image_url="")
+
+    def test_user_signup_fail_same_email(self):
+        """ does user.email fail to create new User when email is same as another user """
+
+        signupUser = User.signup(username="same_email_user",
+                    email="test@test.com", 
+                    password="HASHED_PASSWORD",
+                    image_url="" )
+
+        with self.assertRaises(IntegrityError):
+            db.session.commit()
+    
+    def test_user_authenticate_success(self):
+        """ does user.authenticate succeed to authenticate when credentials are valid """
+
+        user = User.query.get(self.user_id)
+
+        self.assertTrue(User.authenticate(user.username, "HASHED_PASSWORD"))
+
+    def test_user_authenticate_fail_bad_password(self):
+        """ does user.authenticate fail to authenticate when password is invalid """
+
+        user = User.query.get(self.user_id)
+
+        self.assertFalse(User.authenticate(user.username, "bad password"))
+
+    def test_user_authenticate_fail_bad_username(self):
+        """ does user.authenticate fail to authenticate when username is invalid """
+
+        user = User.query.get(self.user_id)
+
+        self.assertFalse(User.authenticate("bad_username", "HASHED_PASSWORD"))
