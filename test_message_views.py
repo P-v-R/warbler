@@ -126,9 +126,6 @@ class MessageViewTestCase(TestCase):
             self.assertNotIn("DELETE ME", html)
 
 
-    # def test_delete_other_users_message_fail(self):
-    #     """ Cant delete message posted by user not signed in """
-
-    #     with self.client as c:
-    #         with c.session_transaction() as sess:
-    #             sess[CURR_USER_KEY] = self.testuser.id
+    def test_delete_other_users_message_fail(self):
+        """ Cant delete message posted by user not signed in """
+        # TODO need to complete this test
