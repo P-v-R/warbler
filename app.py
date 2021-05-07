@@ -37,7 +37,8 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-        g.user.liked_message_ids = {lm.id for lm in g.user.liked_messages}
+        if g.user:
+            g.user.liked_message_ids = {lm.id for lm in g.user.liked_messages}
 
     else:
         g.user = None

@@ -70,3 +70,65 @@ class MessageViewTestCase(TestCase):
 
             msg = Message.query.one()
             self.assertEqual(msg.text, "Hello")
+
+    def test_add_message_as_other_user_fail(self):
+        """Can't add a message as user not signed in"""
+        # TODO need to complete this test
+
+
+    def test_add_message_as_loggedout_user_fail(self):
+        """ test logged out user cannot add a new message"""
+        with self.client as c:
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
+            html = resp.get_data(as_text = True)
+
+            self.assertIn("Access unauthorized", html)
+
+    def test_delete_message_as_loggedout_user_fail(self):
+        """ test logged out user cant delete message """
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
+
+            # save post response of new message instance with text of "DELETE ME"
+            resp = c.post("/messages/new", data={"text": "DELETE ME"})
+            self.msg = Message.query.one()
+
+            with c.session_transaction() as sess:
+                    sess[CURR_USER_KEY] = None
+            
+            delete_resp = c.post(f"messages/{self.msg.id}/delete", follow_redirects=True)
+            html = delete_resp.get_data(as_text = True)
+
+            self.assertIn("Access unauthorized", html)
+
+
+    def test_delete_message(self):
+        """ Can delete message posted by signed in user """ 
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
+
+            # save post response of new message instance with text of "DELETE ME"
+            resp = c.post("/messages/new", data={"text": "DELETE ME"})
+            msg = Message.query.one()
+
+            # save post response of deletion of "DELETE ME" message
+            delete_resp =c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
+            
+            # test for successful render template after deletion
+            self.assertEqual(delete_resp.status_code, 200)
+
+            # tests previous message body text NOT IN html (prove its been deleted)
+            html = delete_resp.get_data(as_text = True)
+            self.assertNotIn("DELETE ME", html)
+
+
+    # def test_delete_other_users_message_fail(self):
+    #     """ Cant delete message posted by user not signed in """
+
+    #     with self.client as c:
+    #         with c.session_transaction() as sess:
+    #             sess[CURR_USER_KEY] = self.testuser.id
