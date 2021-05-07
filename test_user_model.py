@@ -16,7 +16,6 @@ from models import db, User, Message, Follows
 # connected to the database
 
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
-
 # Now we can import app
 
 from app import app
@@ -55,3 +54,36 @@ class UserModelTestCase(TestCase):
         # User should have no messages & no followers
         self.assertEqual(len(u.messages), 0)
         self.assertEqual(len(u.followers), 0)
+
+    def test_is_following(self):
+        """Test is_following relationship working"""
+
+        u = User(
+            email="test@test.com",
+            username="testuser",
+            password="HASHED_PASSWORD"
+        )
+
+        follow_u = User(
+            email="test1@test.com",
+            username="followuser",
+            password="HASHED_PASSWORD"
+        )
+
+        db.session.add(u)
+        db.session.add(follow_u)
+
+        db.session.commit()
+
+        follow = Follows(user_being_followed_id = follow_u.id, 
+            user_following_id=u.id)
+
+        db.session.add(follow)
+        db.session.commit()
+
+        self.assertEqual(len(u.following), 1)
+        self.assertIn(follow_u, u.following)
+        
+
+
+

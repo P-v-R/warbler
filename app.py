@@ -389,7 +389,6 @@ def like_msg(msg_id):
 
         db.session.commit()
 
-        breakpoint()
         if request.referrer:
             return redirect(request.referrer)
 
