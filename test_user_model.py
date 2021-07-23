@@ -39,24 +39,21 @@ class UserModelTestCase(TestCase):
         Follows.query.delete()
 
         signupUser = User.signup(username="test_user",
-                    email="test@test.com", 
-                    password="HASHED_PASSWORD",
-                    image_url="" )
-        
+                                 email="test@test.com",
+                                 password="HASHED_PASSWORD",
+                                 image_url="")
 
         db.session.commit()
         self.user_id = signupUser.id
-        
+
         self.client = app.test_client()
 
     def tearDown(self):
         """"""
         db.session.rollback()
 
-
     def test_user_model(self):
         """Does basic model work?"""
-
 
         user = User.query.get(self.user_id)
         # User should have no messages & no followers
@@ -65,7 +62,6 @@ class UserModelTestCase(TestCase):
 
     def test_is_following(self):
         """Test is_following relationship working"""
-
 
         userTwo = User(
             email="test1@test.com",
@@ -94,32 +90,27 @@ class UserModelTestCase(TestCase):
         # see if the user.followers method is functioning as expected
         self.assertEqual(len(userTwo.followers), 1)
         self.assertIn(user, userTwo.followers)
-        
+
         # Does User.followers successfully detect when user is not followed by userTwo
         self.assertNotIn(userTwo, user.followers)
 
-    
     def test_user_signup_success(self):
         """ Does User.signup successfully create a new user given valid credentials? """
-       
-        
 
         user = User.query.get(self.user_id)
         self.assertIsInstance(user, User)
-                    
-        
-    def test_user_signup_fail_same_username(self):
-        """ does user.signup fail to create new User when username is the same"""
 
-        # same name as signupUser 
-    
+    def test_user_signup_fail_same_username(self):
+        """ Does user.signup fail to create new User when username is the same"""
+
+        # same name as signupUser
+
         sameNameUser = User.signup(username="test_user",
-                    email="testTwo@testTwo.com", 
-                    password="HASHED_PASSWORD",
-                    image_url="" )
+                                   email="testTwo@testTwo.com",
+                                   password="HASHED_PASSWORD",
+                                   image_url="")
         with self.assertRaises(IntegrityError):
             db.session.commit()
-
 
         db.session.rollback()
         allUsers = User.query.all()
@@ -127,40 +118,40 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(allUsers), 1)
 
     def test_user_signup_fail_no_email(self):
-        """ does user.signup fail to create new User when email is invalid """
+        """ Does user.signup fail to create new User when email is invalid """
 
         with self.assertRaises(TypeError):
             invalidEmailUser = User.signup(username="invalidEmailUser",
-                        password="HASHED_PASSWORD",
-                        image_url="")
+                                           password="HASHED_PASSWORD",
+                                           image_url="")
 
     def test_user_signup_fail_same_email(self):
-        """ does user.email fail to create new User when email is same as another user """
+        """ Does user.email fail to create new User when email is same as another user """
 
         signupUser = User.signup(username="same_email_user",
-                    email="test@test.com", 
-                    password="HASHED_PASSWORD",
-                    image_url="" )
+                                 email="test@test.com",
+                                 password="HASHED_PASSWORD",
+                                 image_url="")
 
         with self.assertRaises(IntegrityError):
             db.session.commit()
-    
+
     def test_user_authenticate_success(self):
-        """ does user.authenticate succeed to authenticate when credentials are valid """
+        """ Does user.authenticate succeed to authenticate when credentials are valid """
 
         user = User.query.get(self.user_id)
 
         self.assertTrue(User.authenticate(user.username, "HASHED_PASSWORD"))
 
     def test_user_authenticate_fail_bad_password(self):
-        """ does user.authenticate fail to authenticate when password is invalid """
+        """ Does user.authenticate fail to authenticate when password is invalid """
 
         user = User.query.get(self.user_id)
 
         self.assertFalse(User.authenticate(user.username, "bad password"))
 
     def test_user_authenticate_fail_bad_username(self):
-        """ does user.authenticate fail to authenticate when username is invalid """
+        """ Does user.authenticate fail to authenticate when username is invalid """
 
         user = User.query.get(self.user_id)
 

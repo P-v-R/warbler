@@ -5,6 +5,7 @@
 #    FLASK_ENV=production python -m unittest test_message_views.py
 
 
+from app import app, CURR_USER_KEY
 import os
 from unittest import TestCase
 
@@ -19,7 +20,6 @@ os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 
 # Now we can import app
 
-from app import app, CURR_USER_KEY
 
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
@@ -75,12 +75,12 @@ class MessageViewTestCase(TestCase):
         """Can't add a message as user not signed in"""
         # TODO need to complete this test
 
-
     def test_add_message_as_loggedout_user_fail(self):
         """ test logged out user cannot add a new message"""
         with self.client as c:
-            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
-            html = resp.get_data(as_text = True)
+            resp = c.post("/messages/new",
+                          data={"text": "Hello"}, follow_redirects=True)
+            html = resp.get_data(as_text=True)
 
             self.assertIn("Access unauthorized", html)
 
@@ -96,16 +96,16 @@ class MessageViewTestCase(TestCase):
             self.msg = Message.query.one()
 
             with c.session_transaction() as sess:
-                    sess[CURR_USER_KEY] = None
-            
-            delete_resp = c.post(f"messages/{self.msg.id}/delete", follow_redirects=True)
-            html = delete_resp.get_data(as_text = True)
+                sess[CURR_USER_KEY] = None
+
+            delete_resp = c.post(
+                f"messages/{self.msg.id}/delete", follow_redirects=True)
+            html = delete_resp.get_data(as_text=True)
 
             self.assertIn("Access unauthorized", html)
 
-
     def test_delete_message(self):
-        """ Can delete message posted by signed in user """ 
+        """ Can delete message posted by signed in user """
 
         with self.client as c:
             with c.session_transaction() as sess:
@@ -116,15 +116,15 @@ class MessageViewTestCase(TestCase):
             msg = Message.query.one()
 
             # save post response of deletion of "DELETE ME" message
-            delete_resp =c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
-            
+            delete_resp = c.post(
+                f"/messages/{msg.id}/delete", follow_redirects=True)
+
             # test for successful render template after deletion
             self.assertEqual(delete_resp.status_code, 200)
 
             # tests previous message body text NOT IN html (prove its been deleted)
-            html = delete_resp.get_data(as_text = True)
+            html = delete_resp.get_data(as_text=True)
             self.assertNotIn("DELETE ME", html)
-
 
     def test_delete_other_users_message_fail(self):
         """ Cant delete message posted by user not signed in """

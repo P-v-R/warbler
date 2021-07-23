@@ -7,7 +7,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, CSRFForm
-from models import db, connect_db, User, Message, Like
+from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
 
@@ -18,7 +18,7 @@ database_url = database_url.replace("postgres://", "postgresql://")
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
- 
+
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
@@ -45,6 +45,7 @@ def add_user_to_g():
     else:
         g.user = None
 
+
 @app.before_request
 def generate_csrf_token():
     """ Add csrf tokens before every POST request to prevent CSRF """
@@ -69,11 +70,8 @@ def do_logout():
 @app.route('/signup', methods=["GET", "POST"])
 def signup():
     """Handle user signup.
-
     Create new user and add to DB. Redirect to home page.
-
     If form not valid, present form.
-
     If the there already is a user with that username: flash message
     and re-present form.
     """
@@ -121,14 +119,13 @@ def login():
 
     return render_template('users/login.html', form=form)
 
-# make POST (form instead of link)
-
 
 @app.route('/logout', methods=["POST"])
 def logout():
     """Handle logout of user."""
 
 # TODO add CSRF protection here
+# make POST (form instead of link)
     do_logout()
 
     flash("Successfully logged out!", 'success')
@@ -141,7 +138,6 @@ def logout():
 @app.route('/users')
 def list_users():
     """Page with listing of users.
-
     Can take a 'q' param in querystring to search by that username.
     """
 
@@ -209,8 +205,6 @@ def add_follow(follow_id):
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
 
-    # TODO had csrf token for follow/unfollow???
-
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
@@ -229,7 +223,7 @@ def show_user_likes(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    # collect list of ids of messages liked by logged-in user
+    # TODO: collect list of ids of messages liked by logged-in user instead of whole liked objects
 
     return render_template('/users/likes.html',
                            user=user)
@@ -295,7 +289,6 @@ def delete_user():
 @app.route('/messages/new', methods=["GET", "POST"])
 def messages_add():
     """Add a message:
-
     Show form if GET. If valid, update message and redirect to user page.
     """
 
@@ -346,7 +339,6 @@ def messages_destroy(message_id):
 @app.route('/')
 def homepage():
     """Show homepage:
-
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
@@ -371,13 +363,13 @@ def homepage():
 ##############################################################################
 # Like routes:
 
-# Can we put like / unlike in same route?
+# TODO: Combine like/unlike into 1 route
 
 
 @app.route('/like/<int:msg_id>', methods=["POST"])
 def like_msg(msg_id):
-    """ handle user liking a message """  # add where it redirects
-    # authentication
+    """ handle user liking a message and then redirects to home page"""  
+    
     if not g.user:
         flash("login to like warble", "warning")
         return redirect("/")
@@ -400,8 +392,8 @@ def like_msg(msg_id):
 
 @app.route('/unlike/<int:msg_id>', methods=["POST"])
 def unlike_msg(msg_id):
-    """ handle user unliking a message """
-    # authentication
+    """ handle user unliking a message and then redirects to homepage"""
+    
     if not g.user:
         flash("login to unlike warble.", "warning")
         return redirect("/")
@@ -435,4 +427,3 @@ def add_header(response):
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
     response.cache_control.no_store = True
     return response
-
